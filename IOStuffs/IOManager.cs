@@ -1,0 +1,57 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using System.IO;
+using System;
+
+namespace FCQ.IO
+{
+    public class IOManager : MonoBehaviour
+    {
+        private string jsonFileLocation;
+        private QuizData quizData;
+        private List<QuizQuestion> questionsList;
+        int questionIndex;
+
+        private string jsonData;
+
+        void Start()
+        {
+            jsonFileLocation = Application.persistentDataPath + "/quizData.json";
+            questionsList = new List<QuizQuestion>();
+        }
+
+        public void SaveToJson(List<QuizQuestion> updatedQuestions)
+        {
+            quizData.questions = updatedQuestions;
+            string jsonData = JsonUtility.ToJson(quizData);
+            File.WriteAllText(jsonFileLocation, jsonData);
+            Debug.Log("Quiz data saved to: " + jsonFileLocation);
+        }
+
+        IEnumerator ReadFromJson()
+        {
+            if (File.Exists(jsonFileLocation))
+            {
+                string loadedJson = File.ReadAllText(jsonFileLocation);
+                quizData = JsonUtility.FromJson<QuizData>(loadedJson);
+                questionsList = quizData.questions;
+            }
+
+            if (quizData == null)
+            {
+                quizData = new QuizData();
+                quizData.questions = new List<QuizQuestion>();
+            }
+
+            yield return null;
+        }
+
+        public IEnumerator GetQuestionsListAsync(Action<List<QuizQuestion>> callback)
+        {
+            yield return StartCoroutine(ReadFromJson());
+            callback?.Invoke(questionsList);
+        }
+    }
+}
+

@@ -5,114 +5,80 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using System;
+using FCQ.IO;
 
 public class QuizManager : MonoBehaviour
 {
-    private string jsonFileLocation;
-    private QuizData quizData;
-    private List<QuizQuestion> questionsList;
-    int questionIndex;
-    InputStuffs inputStuffs;
-
-    string jsonData;
-    // [SerializeField] GameObject textObject;
-    // TextMeshPro givenText;
-    // string typeQuestion;
-    // string typeAnswer;
-    // int typeIndex;
-
-
-    void Awake()
+    IOManager iOManager;
+    List<QuizQuestion> fullQuestionsList;
+    List<QuizQuestion> testQuestions;
+    List<QuizQuestion> tenQuestions;
+    
+    void Start() 
     {
-        // givenText = textObject.GetComponent<TextMeshPro>();
-        jsonFileLocation = Application.persistentDataPath + "/quizData.json";
-        questionsList = new List<QuizQuestion>();
-        inputStuffs = FindObjectOfType<InputStuffs>();
-
-        // SetQuestions();
-        // SaveToJson();
-        ReadFromJson();
-        // if (givenText == null)
-        // {
-        //     Debug.LogError("TextMeshProUGUI component not found on the specified textObject.");
-        //     return;
-        // }
-
-        // Canvas canvas = GameObject.Find("AnswerTB").GetComponent<Canvas>();
-        // secondInputField = canvas.transform.Find("Answers").GetComponent<InputField>();
-        // {
-        //     Debug.LogError("Canvas not found.");
-        //     return;
-        // }
-        // Check();
+        testQuestions = new List<QuizQuestion>();
+        tenQuestions = new List<QuizQuestion>();
+        GetTestList();
+        RandomizeList(testQuestions);
+        GetTen();
     }
 
-
-    // void SetQuestions()
-    // {
-    //     quizData = new QuizData
-    //     {
-    //         questions = new QuizQuestion[]
-    //         {
-    //             new QuizQuestion
-    //             {
-    //                 questionText = "What is the bla?",
-    //                 answers = new string[] {"one", "two", "three", "four"},
-    //                 answerIndex = 1
-    //             },
-    //             new QuizQuestion
-    //             {
-    //                 questionText = "What is the bla bla?",
-    //                 answers = new string[] {"one", "two", "three", "four"},
-    //                 answerIndex = 2
-    //             }
-    //         }
-    //     };
-    // }
-
-    public void SaveToJson()
+    private void LoadQuestions()
     {
-        string jsonData = JsonUtility.ToJson(quizData);
-        File.WriteAllText(jsonFileLocation, jsonData);
-        Debug.Log("Quiz data saved to: " + jsonFileLocation);
+        StartCoroutine(iOManager.GetQuestionsListAsync(InitializeQuestionsList));
+        
     }
 
-    void ReadFromJson()
+    private void InitializeQuestionsList(List<QuizQuestion> loadedQuestions)
     {
-        if (File.Exists(jsonFileLocation))
+        fullQuestionsList = loadedQuestions;
+        Debug.Log("Loaded");
+    }
+
+    public void GetTestList()
+    {
+        for (int i = 0; i < 26; i++)
         {
-            string loadedJson = File.ReadAllText(jsonFileLocation);
-            quizData = JsonUtility.FromJson<QuizData>(loadedJson);
-            questionsList = quizData.questions;
-            questionIndex = questionsList.Count;
-            // InputStuffs inputStuffs = FindObjectOfType<InputStuffs>();
-            
+            System.Random random = new System.Random();
+            int index = random.Next(4);
+            testQuestions.Add(new QuizQuestion
+            {
+                questionText = $"Question {i}",
+                answers = new string[] { "AnswerOne", "AnswerTwo", "AnswerThree", "AnswerFour"},
+                answerIndex = index
+            });
         }
-        inputStuffs.ShowQuestionIndex(questionIndex);
     }
 
-    public void NewQuestion()
+    public void GetTen()
     {
-        if (quizData == null)
+        foreach (QuizQuestion qq in testQuestions)
         {
-            quizData = new QuizData();
-            quizData.questions = new List<QuizQuestion>();
-            
-        } else
-        {
-            questionsList = quizData.questions;
+            int lastIndex = testQuestions.Count -1;
+            tenQuestions.Add(testQuestions[lastIndex]);
+            testQuestions.RemoveAt(lastIndex);
         }
 
-        questionsList.Add(new QuizQuestion
+        foreach (QuizQuestion qq2 in tenQuestions)
         {
-            questionText = inputStuffs.Question,
-            answers = new string[] { inputStuffs.AnswerZero, inputStuffs.AnswerOne, inputStuffs.AnswerTwo, inputStuffs.AnswerThree },
-            answerIndex = inputStuffs.AnswerIndex
-        });
-
-        quizData.questions = questionsList;
-
-        inputStuffs.ResetFields();
-        inputStuffs.ShowQuestionIndex(questionsList.Count);
+            Debug.Log(qq2.questionText);
+        }
     }
+
+    void RandomizeList<T>(List<T> list)
+    {
+        System.Random random = new System.Random();
+
+        int n = list.Count;
+        while (n > 1)
+        {
+            n--;
+            int k = random.Next(n + 1);
+            T value = list[k];
+            list[k] = list[n];
+            list[n] = value;
+        }
+    }
+
 }
